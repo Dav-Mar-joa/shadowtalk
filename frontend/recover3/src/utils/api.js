@@ -1,21 +1,16 @@
 import CryptoJS from 'crypto-js';
 
-// En prod: VITE_API_URL = https://shadowtalk-backend.onrender.com/api
-// En dev:  VITE_API_URL = /api  (proxied par vite vers localhost:5000)
-const BASE    = import.meta.env.VITE_API_URL || '/api';
-const ENC_KEY = import.meta.env.VITE_ENC_KEY || 'ShadowTalk_MyS3cur3K3y_2024!!XYZ';
+const BASE = import.meta.env.VITE_API_URL || '/api';
+const ENC_KEY = import.meta.env.VITE_ENC_KEY || 'shadowtalk_default_32chars_key!!';
 
-// ─── HTTP helpers ───────────────────────────────────────────
+// ─── HTTP helpers ────────────────────────────────────────────
 function headers() {
   const token = localStorage.getItem('st_token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  };
+  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 }
 
 export async function api(path, options = {}) {
-  const res  = await fetch(BASE + path, { headers: headers(), ...options });
+  const res = await fetch(BASE + path, { headers: headers(), ...options });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
@@ -24,14 +19,12 @@ export async function api(path, options = {}) {
 export const get  = (p)       => api(p);
 export const post = (p, body) => api(p, { method: 'POST', body: JSON.stringify(body) });
 
-// ─── AES-256 chiffrement ────────────────────────────────────
+// ─── AES-256 encryption ─────────────────────────────────────
 export function encrypt(text) {
-  if (!text) return text;
-  return CryptoJS.AES.encrypt(String(text), ENC_KEY).toString();
+  return CryptoJS.AES.encrypt(text, ENC_KEY).toString();
 }
 
 export function decrypt(cipher) {
-  if (!cipher) return '';
   try {
     const bytes = CryptoJS.AES.decrypt(cipher, ENC_KEY);
     return bytes.toString(CryptoJS.enc.Utf8) || '🔒';
@@ -40,15 +33,15 @@ export function decrypt(cipher) {
   }
 }
 
-// ─── Awake ping Render ──────────────────────────────────────
+// ─── Awake ping (Render cold-start prevention) ───────────────
 const BACKEND = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 export function startAwakePing() {
   const ping = () => fetch(BACKEND + '/ping').catch(() => {});
   ping();
-  setInterval(ping, 13 * 60 * 1000);
+  setInterval(ping, 13 * 60 * 1000); // toutes les 13 min
 }
 
-// ─── Helpers ────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────
 export function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr)) / 1000;
   if (diff < 60)    return 'maintenant';

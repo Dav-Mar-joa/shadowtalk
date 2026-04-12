@@ -11,19 +11,15 @@ export default function Layout() {
   const navigate = useNavigate();
   const unread   = notifications.length;
 
-  function handleLogout() { logout(); navigate('/login'); }
-
   return (
     <div className="layout">
-
-      {/* ── Sidebar desktop ── */}
       <aside className="sidebar">
         <div className="sidebar-logo">
           <span className="logo-icon">◈</span>
-          <span className="logo-text">SHADOW<em>TALK</em></span>
+          <span className="logo-text">S<em>TLK</em></span>
         </div>
         <nav className="sidebar-nav">
-          <NavLink to="/chats"    className={({isActive})=>`nav-item ${isActive?'active':''}`}>
+          <NavLink to="/chats" className={({isActive})=>`nav-item ${isActive?'active':''}`}>
             <span className="nav-icon">💬</span>
             <span className="nav-label">Chats</span>
             {unread > 0 && <span className="nav-badge">{unread > 9 ? '9+' : unread}</span>}
@@ -32,7 +28,7 @@ export default function Layout() {
             <span className="nav-icon">👥</span>
             <span className="nav-label">Contacts</span>
           </NavLink>
-          <NavLink to="/feed"     className={({isActive})=>`nav-item ${isActive?'active':''}`}>
+          <NavLink to="/feed" className={({isActive})=>`nav-item ${isActive?'active':''}`}>
             <span className="nav-icon">📡</span>
             <span className="nav-label">Fil d'actu</span>
           </NavLink>
@@ -46,7 +42,7 @@ export default function Layout() {
           <div className="sidebar-user">
             <div className="avatar avatar-sm">{getAvatarEmoji(user?.avatar)}</div>
             <span className="user-name">@{user?.username}</span>
-            <button className="btn-icon" onClick={handleLogout} title="Déconnexion">
+            <button className="btn-icon" onClick={() => { logout(); navigate('/login'); }} title="Déconnexion">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                 <polyline points="16 17 21 12 16 7"/>
@@ -57,56 +53,32 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* ── Sticky header MOBILE uniquement ── */}
-      <header className="mobile-header">
-        <div className="mobile-logo">
-          <span>◈</span>
-          SHADOW<em>TALK</em>
-        </div>
-        <div className="mobile-header-right">
-          <div className="mobile-user">
-            <span className={`mobile-conn-dot ${connected ? 'online' : 'offline'}`}/>
-            <div className="avatar avatar-sm">{getAvatarEmoji(user?.avatar)}</div>
-            <span className="mobile-username">@{user?.username}</span>
-          </div>
-          <button className="btn-icon" onClick={handleLogout}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      {/* ── Contenu principal ── */}
       <main className="layout-main">
         <Outlet/>
       </main>
 
-      {/* ── Bottom nav mobile uniquement ── */}
+      {/* Bottom nav — mobile uniquement */}
       <nav className="bottom-nav">
         <NavLink to="/chats" className={({isActive})=>`bnav-item ${isActive?'active':''}`}>
           <div className="bnav-icon-wrap">
             <span>💬</span>
             {unread > 0 && <span className="bnav-badge">{unread > 9 ? '9+' : unread}</span>}
           </div>
-          <span>Chats</span>
+          <span className="bnav-label">Chats</span>
         </NavLink>
         <NavLink to="/contacts" className={({isActive})=>`bnav-item ${isActive?'active':''}`}>
           <div className="bnav-icon-wrap"><span>👥</span></div>
-          <span>Contacts</span>
+          <span className="bnav-label">Contacts</span>
         </NavLink>
         <NavLink to="/feed" className={({isActive})=>`bnav-item ${isActive?'active':''}`}>
           <div className="bnav-icon-wrap"><span>📡</span></div>
-          <span>Actu</span>
+          <span className="bnav-label">Actu</span>
         </NavLink>
-        <NavLink to="/feed" className="bnav-item" onClick={e => { e.preventDefault(); handleLogout(); }}>
+        <button className="bnav-item" onClick={() => { logout(); navigate('/login'); }}>
           <div className="bnav-icon-wrap"><span>🚪</span></div>
-          <span>Quitter</span>
-        </NavLink>
+          <span className="bnav-label">Quitter</span>
+        </button>
       </nav>
-
     </div>
   );
 }
