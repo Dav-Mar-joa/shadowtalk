@@ -1,0 +1,22 @@
+{
+  "name": "ShadowTalk",
+  "short_name": "ShadowTalk",
+  "description": "Messagerie anonyme et chiffrée",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07080d",
+  "theme_color": "#7c5cfc",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/badge-72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    }
+  ]
+}
