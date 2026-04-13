@@ -13,6 +13,7 @@ const server = http.createServer(app);
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'https://shadowtalk-front.onrender.com',
   process.env.CLIENT_URL
 ].filter(Boolean);
 
@@ -25,8 +26,25 @@ const corsOptions = {
   credentials: true
 };
 
+// const io = new Server(server, {
+//   cors: { origin: allowedOrigins, methods: ['GET','POST'], credentials: true },
+//   maxHttpBufferSize: 10e6
+// });
 const io = new Server(server, {
-  cors: { origin: allowedOrigins, methods: ['GET','POST'], credentials: true },
+  cors: {
+    origin: (origin, cb) => {
+      const allowed = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://shadowtalk-front.onrender.com',
+        process.env.CLIENT_URL
+      ].filter(Boolean);
+      if (!origin || allowed.includes(origin)) return cb(null, true);
+      cb(null, false);
+    },
+    methods: ['GET','POST'],
+    credentials: true
+  },
   maxHttpBufferSize: 10e6
 });
 
