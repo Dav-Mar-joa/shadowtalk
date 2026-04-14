@@ -225,7 +225,7 @@
     padding: 8px 10px;
     padding-bottom: max(8px, env(safe-area-inset-bottom));
     position: sticky;
-    bottom: 0;
+    bottom: 64px;
   }
   .bubble { font-size: 14px; }
   .msg-block { max-width: 84%; }
