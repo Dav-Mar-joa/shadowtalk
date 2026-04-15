@@ -7,10 +7,8 @@ export default function NotifBanner() {
   const { permission, subscribed, loading, error, supported, subscribe, unsubscribe } =
     usePushNotifications(navigate);
 
-  // Pas de Web Push sur ce navigateur
   if (!supported) return null;
 
-  // Déjà abonné → petit badge vert
   if (subscribed) {
     return (
       <div className="notif-banner subscribed">
@@ -21,24 +19,22 @@ export default function NotifBanner() {
     );
   }
 
-  // Permission refusée
   if (permission === 'denied') {
     return (
       <div className="notif-banner denied">
         <span>🔕</span>
-        <span>Notifs bloquées</span>
+        <span>Notifs bloquées — paramètres navigateur</span>
       </div>
     );
   }
 
-  // Pas encore demandé → bouton d'activation
   return (
     <div className="notif-banner prompt">
       {error && <div className="notif-error">{error}</div>}
       <button onClick={subscribe} disabled={loading} className="notif-activate">
         {loading
           ? <span className="spinner" style={{width:12,height:12}}/>
-          : <><span>🔔</span><span>Activer les notifs</span></>
+          : <><span>🔔</span><span>Activer notifs + micro</span></>
         }
       </button>
     </div>

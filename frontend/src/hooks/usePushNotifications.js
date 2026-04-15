@@ -1,13 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { get, post } from '../utils/api';
 
-/**
- * Hook pour gérer les notifications push Web
- * - Demande la permission
- * - Enregistre le service worker
- * - S'abonne au serveur push
- * - Gère la navigation depuis une notif (appli fermée → rouverte)
- */
 export function usePushNotifications(navigate) {
   const [permission,  setPermission]  = useState(Notification.permission);
   const [subscribed,  setSubscribed]  = useState(false);
@@ -15,32 +8,21 @@ export function usePushNotifications(navigate) {
   const [error,       setError]       = useState('');
   const [swReg,       setSwReg]       = useState(null);
 
-  // Enregistrer le Service Worker au démarrage
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
     navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then(reg => {
-        setSwReg(reg);
-        // Vérifie si déjà abonné
-        return reg.pushManager.getSubscription();
-      })
-      .then(sub => {
-        if (sub) setSubscribed(true);
-      })
+      .then(reg => { setSwReg(reg); return reg.pushManager.getSubscription(); })
+      .then(sub => { if (sub) setSubscribed(true); })
       .catch(err => console.error('SW registration failed:', err));
 
-    // Écoute les messages du SW (navigation depuis notif)
     const handler = event => {
-      if (event.data?.type === 'NAVIGATE' && navigate) {
-        navigate(event.data.url);
-      }
+      if (event.data?.type === 'NAVIGATE' && navigate) navigate(event.data.url);
     };
     navigator.serviceWorker.addEventListener('message', handler);
     return () => navigator.serviceWorker.removeEventListener('message', handler);
   }, [navigate]);
 
-  // Convertit la clé VAPID base64 en Uint8Array
   function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -48,31 +30,40 @@ export function usePushNotifications(navigate) {
     return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
   }
 
-  // Demander la permission + s'abonner
+  // ✅ Demande TOUTES les permissions en une fois
   const subscribe = useCallback(async () => {
     if (!swReg) { setError('Service Worker non chargé'); return; }
     setLoading(true); setError('');
 
     try {
-      // 1. Demander permission
+      // 1. Permission notifications
       const perm = await Notification.requestPermission();
       setPermission(perm);
       if (perm !== 'granted') {
-        setError('Permission refusée — active les notifications dans les paramètres de ton navigateur');
-        return;
+        setError('Active les notifications dans les paramètres du navigateur');
+        setLoading(false); return;
       }
 
-      // 2. Récupérer la clé VAPID publique
-      const { key } = await get('/push/vapid-public-key');
-      if (!key) { setError('Clé VAPID manquante côté serveur'); return; }
+      // 2. Permission microphone (demande proactive)
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop()); // stop immédiatement, juste pour la permission
+      } catch { /* micro refusé — pas bloquant */ }
 
-      // 3. Créer la subscription navigateur
+      // 3. Vibration test (API)
+      if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
+
+      // 4. Clé VAPID
+      const { key } = await get('/push/vapid-public-key');
+      if (!key) { setError('Clé VAPID manquante'); setLoading(false); return; }
+
+      // 5. Subscription push
       const subscription = await swReg.pushManager.subscribe({
-        userVisibleOnly:      true,
+        userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(key)
       });
 
-      // 4. Envoyer au backend
+      // 6. Enregistrement backend
       await post('/push/subscribe', { subscription });
       setSubscribed(true);
     } catch(e) {
@@ -82,25 +73,17 @@ export function usePushNotifications(navigate) {
     }
   }, [swReg]);
 
-  // Se désabonner
   const unsubscribe = useCallback(async () => {
     if (!swReg) return;
     setLoading(true);
     try {
       const sub = await swReg.pushManager.getSubscription();
-      if (sub) {
-        await post('/push/unsubscribe', { endpoint: sub.endpoint });
-        await sub.unsubscribe();
-      }
+      if (sub) { await post('/push/unsubscribe', { endpoint: sub.endpoint }); await sub.unsubscribe(); }
       setSubscribed(false);
-    } catch(e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch(e) { setError(e.message); }
+    finally { setLoading(false); }
   }, [swReg]);
 
   const supported = 'serviceWorker' in navigator && 'PushManager' in window;
-
   return { permission, subscribed, loading, error, supported, subscribe, unsubscribe };
 }

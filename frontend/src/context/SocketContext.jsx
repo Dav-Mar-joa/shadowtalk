@@ -25,17 +25,31 @@ export function SocketProvider({ children }) {
 
     s.on('connect',    () => setConnected(true));
     s.on('disconnect', () => setConnected(false));
+
     s.on('notification', n => {
       setNotifications(prev => [{ ...n, id: Date.now() }, ...prev.slice(0, 49)]);
+
+      // ✅ Vibration à la réception d'un message
+      if ('vibrate' in navigator) {
+        navigator.vibrate([150, 80, 150]);
+      }
+
+      // Notification browser si appli ouverte
       if (Notification.permission === 'granted') {
-        new Notification(`💬 ${n.from}`, { body: 'Nouveau message', icon: '/icon-192.png', silent: false });
+        new Notification(`💬 ${n.from}`, {
+          body: 'Nouveau message',
+          icon: '/icon-192.png',
+          badge: '/badge-72.png',
+          silent: false,
+          vibrate: [200, 100, 200]
+        });
       }
     });
 
     return () => s.disconnect();
   }, [token]);
 
-  function clearNotif(id) { setNotifications(prev => prev.filter(n => n.id !== id)); }
+  function clearNotif(id)  { setNotifications(prev => prev.filter(n => n.id !== id)); }
   function clearAllNotifs() { setNotifications([]); }
 
   return (

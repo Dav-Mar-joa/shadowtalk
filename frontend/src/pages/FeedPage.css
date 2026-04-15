@@ -173,3 +173,11 @@
   .post-reactions-area { padding: 6px 10px 8px; }
   .reaction-picker-feed { font-size: 18px; padding: 5px 6px; }
 }
+
+/* ─── Mobile extra ─── */
+@media (max-width: 768px) {
+  .feed-inner { padding: 12px 12px 80px; gap: 12px; }
+  .post-composer { padding: 14px; }
+  textarea { font-size: 16px; }
+  input    { font-size: 16px; }
+}

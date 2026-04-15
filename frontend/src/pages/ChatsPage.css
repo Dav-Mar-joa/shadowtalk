@@ -232,3 +232,13 @@
   .msg-image { max-width: 180px; max-height: 220px; }
   .msg-audio { min-width: 150px; }
 }
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  .chats-header   { padding: 12px 14px 10px; }
+  .chats-title h2 { font-size: 16px; }
+  .chats-search   { padding: 10px 14px; }
+  .chat-row       { padding: 11px 14px; }
+  .group-creator  { padding: 0 14px 10px; }
+  input { font-size: 16px; } /* évite zoom iOS */
+}

@@ -71,3 +71,12 @@ export function getYoutubeId(url) {
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
   return match ? match[1] : null;
 }
+
+// Helper pour les appels directs (DELETE etc.) avec la bonne URL de base
+export const apiDirect = (path, opts={}) => fetch(BASE + path, {
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: 'Bearer ' + localStorage.getItem('st_token')
+  },
+  ...opts
+}).then(r => r.json());

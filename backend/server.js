@@ -9,40 +9,32 @@ const jwt        = require('jsonwebtoken');
 const app    = express();
 const server = http.createServer(app);
 
-// ── CORS : accepte localhost en dev ET le front Render en prod ──
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://shadowtalk-front.onrender.com',
-  process.env.CLIENT_URL
-].filter(Boolean);
+// CORS dynamique — lit process.env à chaque requête
+function getAllowedOrigins() {
+  return [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://shadowtalk-front.onrender.com',
+    process.env.CLIENT_URL
+  ].filter(Boolean);
+}
 
 const corsOptions = {
   origin: (origin, cb) => {
-    // Pas d'origin = requête directe (Render health check, curl, etc.)
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    if (!origin || getAllowedOrigins().includes(origin)) return cb(null, true);
+    console.warn('CORS bloqué:', origin, '| Allowed:', getAllowedOrigins());
     cb(new Error('CORS bloqué: ' + origin));
   },
   credentials: true
 };
 
-// const io = new Server(server, {
-//   cors: { origin: allowedOrigins, methods: ['GET','POST'], credentials: true },
-//   maxHttpBufferSize: 10e6
-// });
 const io = new Server(server, {
   cors: {
     origin: (origin, cb) => {
-      const allowed = [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'https://shadowtalk-front.onrender.com',
-        process.env.CLIENT_URL
-      ].filter(Boolean);
-      if (!origin || allowed.includes(origin)) return cb(null, true);
+      if (!origin || getAllowedOrigins().includes(origin)) return cb(null, true);
       cb(null, false);
     },
-    methods: ['GET','POST'],
+    methods: ['GET', 'POST'],
     credentials: true
   },
   maxHttpBufferSize: 10e6
@@ -63,14 +55,12 @@ app.use('/api/posts',    require('./routes/posts'));
 app.use('/api/push',     require('./routes/push'));
 app.use('/api/contacts', require('./routes/contacts'));
 
-// Awake ping Render (évite le sleep du plan gratuit)
 app.get('/ping', (_, res) => res.json({ ok: true, ts: Date.now(), env: process.env.NODE_ENV }));
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connecté'))
   .catch(e => console.error('❌ MongoDB:', e.message));
 
-// ── Socket.io auth middleware ──
 io.use((socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
@@ -114,14 +104,17 @@ io.on('connection', socket => {
         const mStr = memberId.toString();
         if (mStr === uid) continue;
         const sid = online.get(mStr);
-        if (sid) io.to(sid).emit('notification', { type:'message', chatId, from: full.sender.username });
+        if (sid) io.to(sid).emit('notification', { type: 'message', chatId, from: full.sender.username });
         const subs = await PushSub.find({ user: memberId });
         if (subs.length > 0) {
           const bodyText = type === 'image' ? '📷 Image' : type === 'audio' ? '🎤 Vocal' : 'Nouveau message';
           await sendPush(subs.map(s => s.subscription), {
-            title: `💬 ${full.sender.username}`, body: bodyText,
-            icon: '/icon-192.png', badge: '/badge-72.png',
-            url: `/chat/${chatId}`, chatId
+            title: `💬 ${full.sender.username}`,
+            body: bodyText,
+            icon: '/icon-192.png',
+            badge: '/badge-72.png',
+            url: `/chat/${chatId}`,
+            chatId
           });
         }
       }
@@ -131,8 +124,13 @@ io.on('connection', socket => {
   socket.on('typing', ({ chatId, typing }) =>
     socket.to('c:' + chatId).emit('typing', { userId: uid, typing }));
 
-  socket.on('disconnect', () => { online.delete(uid); io.emit('user_offline', uid); });
+  socket.on('disconnect', () => {
+    online.delete(uid);
+    io.emit('user_offline', uid);
+  });
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 ShadowTalk backend — port ${PORT} — ${process.env.NODE_ENV || 'development'}`));
+server.listen(PORT, () =>
+  console.log(`🚀 ShadowTalk — port ${PORT} — ${process.env.NODE_ENV || 'development'}`)
+);

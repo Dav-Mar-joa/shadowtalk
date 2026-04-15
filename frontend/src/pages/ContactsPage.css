@@ -126,3 +126,12 @@
   color: var(--cyan);
   border-color: rgba(0,229,204,0.3);
 }
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  .contacts-header { padding: 12px 14px 10px; }
+  .contacts-search { padding: 10px 14px; }
+  .contact-row { padding: 10px 14px; }
+  .contact-actions { opacity: 1; } /* toujours visible sur mobile */
+  input { font-size: 16px; }
+}

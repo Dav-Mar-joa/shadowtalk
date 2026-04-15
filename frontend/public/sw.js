@@ -1,75 +1,50 @@
-// ◈ ShadowTalk Service Worker
-// Tourne en arrière-plan même quand l'appli est fermée
+// ◈ ShadowTalk Service Worker v2
+const CACHE_NAME = 'shadowtalk-v2';
 
-const CACHE_NAME = 'shadowtalk-v1';
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 
-// ─── Installation ───────────────────────────────────────────
-self.addEventListener('install', event => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
-});
-
-// ─── Push reçu ──────────────────────────────────────────────
+// ── Push reçu ──────────────────────────────────────────────
 self.addEventListener('push', event => {
   let data = {};
-  try {
-    data = event.data?.json() || {};
-  } catch {
-    data = { title: '◈ ShadowTalk', body: event.data?.text() || 'Nouveau message' };
-  }
+  try { data = event.data?.json() || {}; } catch { data = { title: '◈ ShadowTalk', body: event.data?.text() || 'Nouveau message' }; }
 
-  const title   = data.title || '◈ ShadowTalk';
   const options = {
-    body:             data.body  || 'Nouveau message',
-    icon:             data.icon  || '/icon-192.png',
-    badge:            data.badge || '/badge-72.png',
-    tag:              data.chatId || 'shadowtalk-notif',   // regroupe les notifs du même chat
-    renotify:         true,
-    silent:           false,
-    vibrate:          [100, 50, 100],
-    data: {
-      url:    data.url    || '/',
-      chatId: data.chatId || null
-    },
+    body:      data.body  || 'Nouveau message',
+    icon:      '/icon-192.png',
+    badge:     '/badge-72.png',
+    tag:       data.chatId || 'shadowtalk',
+    renotify:  true,
+    silent:    false,
+    vibrate:   [200, 100, 200, 100, 200], // ✅ Vibration pattern
+    data:      { url: data.url || '/', chatId: data.chatId || null },
     actions: [
-      { action: 'open',    title: 'Ouvrir' },
+      { action: 'open',    title: '💬 Ouvrir' },
       { action: 'dismiss', title: 'Ignorer' }
     ]
   };
 
   event.waitUntil(
-    self.registration.showNotification(title, options)
+    self.registration.showNotification(data.title || '◈ ShadowTalk', options)
   );
 });
 
-// ─── Clic sur la notification ────────────────────────────────
+// ── Clic notification ──────────────────────────────────────
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-
   if (event.action === 'dismiss') return;
 
-  const targetUrl = event.notification.data?.url || '/';
-
+  const url = event.notification.data?.url || '/';
   event.waitUntil(
-    // Cherche si un onglet ShadowTalk est déjà ouvert
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
       for (const client of clients) {
         if (client.url.includes(self.location.origin)) {
           client.focus();
-          client.postMessage({ type: 'NAVIGATE', url: targetUrl });
+          client.postMessage({ type: 'NAVIGATE', url });
           return;
         }
       }
-      // Sinon ouvre un nouvel onglet
-      return self.clients.openWindow(self.location.origin + targetUrl);
+      return self.clients.openWindow(self.location.origin + url);
     })
   );
-});
-
-// ─── Notification fermée ─────────────────────────────────────
-self.addEventListener('notificationclose', () => {
-  // Analytics possible ici
 });

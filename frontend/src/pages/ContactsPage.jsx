@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { get, post } from '../utils/api';
+import { get, post, apiDirect } from '../utils/api';
 import { getAvatarEmoji } from '../utils/avatars';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import OnlineDot from '../components/layout/OnlineDot';
 import './ContactsPage.css';
 
-const API = (path, opts={}) => fetch('/api' + path, {
-  headers: { 'Content-Type':'application/json', Authorization:'Bearer '+localStorage.getItem('st_token') },
-  ...opts
-}).then(r => r.json());
+
 
 export default function ContactsPage() {
   const navigate = useNavigate();
@@ -48,7 +45,7 @@ export default function ContactsPage() {
 
   async function removeContact(contactId) {
     try {
-      await API(`/contacts/${contactId}`, { method: 'DELETE' });
+      await apiDirect(`/contacts/${contactId}`, { method: 'DELETE' });
       setContacts(prev => prev.filter(c => c._id !== contactId));
     } catch(e) { setError(e.message); }
   }
