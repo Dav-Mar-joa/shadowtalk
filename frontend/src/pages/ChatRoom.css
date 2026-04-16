@@ -99,6 +99,7 @@
   /* Toujours visible même avec le clavier */
   position: relative;
   z-index: 10;
+  
 }
 
 .input-wrap {
@@ -158,6 +159,7 @@
     padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
     flex-shrink: 0;
     background: var(--bg-deep);
+    margin-bottom: 64px;
   }
 
   .input-wrap { padding: 5px 5px 5px 10px; }
