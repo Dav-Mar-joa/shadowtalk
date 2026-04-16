@@ -6,43 +6,6 @@ router.use((req, res, next) => { req.io = req.app.get('io'); next(); });
 
 const VALID_REACTIONS = ['❤️','😂','👍','😮','😢','🔥'];
 
-/**
- * Logique "une réaction par user" :
- * - Si l'user réagit avec le MÊME emoji → toggle off
- * - Si l'user réagit avec un AUTRE emoji → retire l'ancien, ajoute le nouveau
- * - Résultat : max 1 emoji par utilisateur sur un item
- */
-function applyReaction(reactionsMap, userId, newEmoji) {
-  if (!reactionsMap) reactionsMap = new Map();
-
-  // Trouver l'emoji actuel de cet utilisateur (s'il en a un)
-  let currentEmoji = null;
-  for (const [emoji, users] of reactionsMap.entries()) {
-    if (users.includes(userId)) {
-      currentEmoji = emoji;
-      break;
-    }
-  }
-
-  // Retirer l'utilisateur de son emoji actuel
-  if (currentEmoji) {
-    const users = reactionsMap.get(currentEmoji).filter(u => u !== userId);
-    if (users.length === 0) reactionsMap.delete(currentEmoji);
-    else reactionsMap.set(currentEmoji, users);
-  }
-
-  // Si même emoji → juste le retrait (toggle off) → terminé
-  if (currentEmoji === newEmoji) return reactionsMap;
-
-  // Sinon ajouter l'utilisateur sur le nouvel emoji
-  const users = reactionsMap.get(newEmoji) || [];
-  users.push(userId);
-  reactionsMap.set(newEmoji, users);
-
-  return reactionsMap;
-}
-
-// Fil d'actu
 router.get('/', auth, async (req, res) => {
   try {
     const page  = parseInt(req.query.page) || 1;
@@ -54,7 +17,6 @@ router.get('/', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// Créer un post
 router.post('/', auth, async (req, res) => {
   try {
     const { content, url, urlType, urlPreview } = req.body;
@@ -66,7 +28,6 @@ router.post('/', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// Supprimer un post
 router.delete('/:id', auth, async (req, res) => {
   try {
     const p = await Post.findById(req.params.id);
@@ -78,7 +39,7 @@ router.delete('/:id', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// ✅ Réaction sur un post — une seule réaction par utilisateur
+// ✅ Réaction sur un post (toggle)
 router.post('/:id/react', auth, async (req, res) => {
   try {
     const { emoji } = req.body;
@@ -86,7 +47,11 @@ router.post('/:id/react', auth, async (req, res) => {
     const p = await Post.findById(req.params.id);
     if (!p) return res.status(404).json({ error: 'Post introuvable' });
 
-    p.reactions = applyReaction(p.reactions || new Map(), req.userId, emoji);
+    if (!p.reactions) p.reactions = new Map();
+    const users = p.reactions.get(emoji) || [];
+    const idx   = users.indexOf(req.userId);
+    if (idx > -1) users.splice(idx, 1); else users.push(req.userId);
+    if (users.length === 0) p.reactions.delete(emoji); else p.reactions.set(emoji, users);
     p.markModified('reactions');
     await p.save();
 
@@ -96,7 +61,19 @@ router.post('/:id/react', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// Commenter
+// Like (raccourci ❤️ — garde la compat)
+router.post('/:id/like', auth, async (req, res) => {
+  try {
+    const p = await Post.findById(req.params.id);
+    if (!p) return res.status(404).json({ error: 'Post introuvable' });
+    const idx = p.likes.findIndex(l => l.toString() === req.userId);
+    if (idx > -1) p.likes.splice(idx, 1); else p.likes.push(req.userId);
+    await p.save();
+    req.io?.emit('post_liked', { postId: p._id, likes: p.likes.length, liked: idx === -1, userId: req.userId });
+    res.json({ likes: p.likes.length, liked: idx === -1 });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 router.post('/:id/comment', auth, async (req, res) => {
   try {
     const { content } = req.body;
@@ -113,7 +90,7 @@ router.post('/:id/comment', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// ✅ Réaction sur un commentaire — une seule réaction par utilisateur
+// ✅ Réaction sur un commentaire (toggle)
 router.post('/:id/comment/:commentId/react', auth, async (req, res) => {
   try {
     const { emoji } = req.body;
@@ -123,7 +100,11 @@ router.post('/:id/comment/:commentId/react', auth, async (req, res) => {
     const comment = p.comments.id(req.params.commentId);
     if (!comment) return res.status(404).json({ error: 'Commentaire introuvable' });
 
-    comment.reactions = applyReaction(comment.reactions || new Map(), req.userId, emoji);
+    if (!comment.reactions) comment.reactions = new Map();
+    const users = comment.reactions.get(emoji) || [];
+    const idx   = users.indexOf(req.userId);
+    if (idx > -1) users.splice(idx, 1); else users.push(req.userId);
+    if (users.length === 0) comment.reactions.delete(emoji); else comment.reactions.set(emoji, users);
     p.markModified('comments');
     await p.save();
 
@@ -135,7 +116,6 @@ router.post('/:id/comment/:commentId/react', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// Supprimer un commentaire
 router.delete('/:id/comment/:commentId', auth, async (req, res) => {
   try {
     const p = await Post.findById(req.params.id);

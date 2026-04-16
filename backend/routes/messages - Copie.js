@@ -5,37 +5,6 @@ const Chat    = require('../models/Chat');
 
 router.use((req, res, next) => { req.io = req.app.get('io'); next(); });
 
-/**
- * Une seule réaction par utilisateur :
- * - Même emoji → toggle off
- * - Autre emoji → remplace l'ancien
- */
-function applyReaction(reactionsMap, userId, newEmoji) {
-  if (!reactionsMap) reactionsMap = new Map();
-
-  let currentEmoji = null;
-  for (const [emoji, users] of reactionsMap.entries()) {
-    if (users.includes(userId)) { currentEmoji = emoji; break; }
-  }
-
-  // Retirer l'ancien
-  if (currentEmoji) {
-    const users = reactionsMap.get(currentEmoji).filter(u => u !== userId);
-    if (users.length === 0) reactionsMap.delete(currentEmoji);
-    else reactionsMap.set(currentEmoji, users);
-  }
-
-  // Toggle off si même emoji
-  if (currentEmoji === newEmoji) return reactionsMap;
-
-  // Ajouter le nouveau
-  const users = reactionsMap.get(newEmoji) || [];
-  users.push(userId);
-  reactionsMap.set(newEmoji, users);
-
-  return reactionsMap;
-}
-
 // Récupérer messages d'un chat
 router.get('/:chatId', auth, async (req, res) => {
   try {
@@ -49,15 +18,16 @@ router.get('/:chatId', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// Supprimer un message
+// Supprimer un message (soft delete)
 router.delete('/:messageId', auth, async (req, res) => {
   try {
     const msg = await Message.findById(req.params.messageId);
     if (!msg) return res.status(404).json({ error: 'Message introuvable' });
-    if (msg.sender.toString() !== req.userId) return res.status(403).json({ error: 'Pas ton message' });
-    msg.deleted = true;
+    if (msg.sender.toString() !== req.userId)
+      return res.status(403).json({ error: 'Pas ton message' });
+    msg.deleted          = true;
     msg.encryptedContent = '';
-    msg.mediaData = '';
+    msg.mediaData        = '';
     await msg.save();
     const chatId = msg.chat.toString();
     const last = await Message.findOne({ chat: chatId, deleted: false }).sort({ createdAt: -1 });
@@ -82,7 +52,7 @@ router.post('/:chatId/read', auth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// ✅ Réaction sur un message — une seule réaction par utilisateur
+// Réaction emoji
 router.post('/:messageId/react', auth, async (req, res) => {
   try {
     const { emoji } = req.body;
@@ -90,8 +60,12 @@ router.post('/:messageId/react', auth, async (req, res) => {
     const msg = await Message.findById(req.params.messageId);
     if (!msg) return res.status(404).json({ error: 'Message introuvable' });
 
-    msg.reactions = applyReaction(msg.reactions || new Map(), req.userId, emoji);
-    msg.markModified('reactions');
+    const reactions = msg.reactions || new Map();
+    const users = reactions.get(emoji) || [];
+    const idx   = users.indexOf(req.userId);
+    if (idx > -1) users.splice(idx, 1); else users.push(req.userId);
+    if (users.length === 0) reactions.delete(emoji); else reactions.set(emoji, users);
+    msg.reactions = reactions;
     await msg.save();
 
     const chatId = msg.chat.toString();

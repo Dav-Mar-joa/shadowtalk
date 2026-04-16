@@ -35,7 +35,7 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="sidebar-logo">
           <span className="logo-icon">◈</span>
-          <span className="logo-text">SHADOW<em>TALK</em></span>
+          <span className="logo-text">S<em>TLK</em></span>
         </div>
         <nav className="sidebar-nav">
           <NavLink to="/chats"    className={({isActive})=>`nav-item ${isActive?'active':''}`}>
@@ -72,7 +72,7 @@ export default function Layout() {
       {/* ══ STICKY HEADER mobile uniquement ══ */}
       <header className="mobile-header">
         <div className="mobile-logo">
-          <span>◈</span>SHADOW<em>TALK</em>
+          <span>◈</span>S<em>TLK</em>
         </div>
         <div className="mobile-header-right">
           <MobileNotifBtn />
