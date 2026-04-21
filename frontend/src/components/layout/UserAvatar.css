@@ -1,0 +1,20 @@
+.uavatar {
+  border-radius: 50%;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-hi);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.uavatar-sm { width: 28px; height: 28px; font-size: 14px; }
+.uavatar-md { width: 36px; height: 36px; font-size: 18px; }
+.uavatar-lg { width: 52px; height: 52px; font-size: 26px; }
+
+.uavatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

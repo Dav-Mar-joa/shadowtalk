@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const auth   = require('../middleware/auth');
 const Post   = require('../models/Post');
+const Contact = require('../models/Contact');
 
 router.use((req, res, next) => { req.io = req.app.get('io'); next(); });
 
@@ -42,16 +43,53 @@ function applyReaction(reactionsMap, userId, newEmoji) {
   return reactionsMap;
 }
 
-// Fil d'actu
+// // Fil d'actu
+// router.get('/', auth, async (req, res) => {
+//   try {
+//     const page  = parseInt(req.query.page) || 1;
+//     const posts = await Post.find()
+//       .populate('author', 'username avatar avatarImage')
+//       .populate('comments.author', 'username avatar avatarImage')
+//       .sort({ createdAt: -1 }).skip((page-1)*20).limit(20);
+//     res.json(posts);
+//   } catch(e) { res.status(500).json({ error: e.message }); }
+// });
 router.get('/', auth, async (req, res) => {
   try {
-    const page  = parseInt(req.query.page) || 1;
-    const posts = await Post.find()
-      .populate('author', 'username avatar')
-      .populate('comments.author', 'username avatar')
-      .sort({ createdAt: -1 }).skip((page-1)*20).limit(20);
+    const page = parseInt(req.query.page) || 1;
+    const userId = req.userId;
+
+    // 🔐 récupérer les contacts
+    const contacts = await Contact.find({
+      $or: [
+        { user: userId },
+        { contact: userId }
+      ]
+    });
+
+    // 🎯 extraire les IDs des contacts
+    const contactIds = contacts.map(c =>
+      c.user.toString() === userId ? c.contact : c.user
+    );
+
+    // ➕ inclure soi-même
+    contactIds.push(userId);
+
+    // 🔥 récupérer uniquement les posts autorisés
+    const posts = await Post.find({
+      author: { $in: contactIds }
+    })
+      .populate('author', 'username avatar avatarImage')
+      .populate('comments.author', 'username avatar avatarImage')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * 20)
+      .limit(20);
+
     res.json(posts);
-  } catch(e) { res.status(500).json({ error: e.message }); }
+
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Créer un post
@@ -60,7 +98,7 @@ router.post('/', auth, async (req, res) => {
     const { content, url, urlType, urlPreview } = req.body;
     if (!content && !url) return res.status(400).json({ error: 'Contenu ou URL requis' });
     let p = await Post.create({ author: req.userId, content, url, urlType, urlPreview });
-    p = await p.populate('author', 'username avatar');
+    p = await p.populate('author', 'username avatar avatarImage');
     req.io?.emit('new_post', p);
     res.status(201).json(p);
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -106,8 +144,8 @@ router.post('/:id/comment', auth, async (req, res) => {
     p.comments.push({ author: req.userId, content });
     await p.save();
     const updated = await Post.findById(req.params.id)
-      .populate('author', 'username avatar')
-      .populate('comments.author', 'username avatar');
+      .populate('author', 'username avatar avatarImage')
+      .populate('comments.author', 'username avatar avatarImage');
     req.io?.emit('post_commented', updated);
     res.json(updated);
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -128,8 +166,8 @@ router.post('/:id/comment/:commentId/react', auth, async (req, res) => {
     await p.save();
 
     const updated = await Post.findById(req.params.id)
-      .populate('author', 'username avatar')
-      .populate('comments.author', 'username avatar');
+      .populate('author', 'username avatar avatarImage')
+      .populate('comments.author', 'username avatar avatarImage');
     req.io?.emit('post_commented', updated);
     res.json(updated);
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -146,8 +184,8 @@ router.delete('/:id/comment/:commentId', auth, async (req, res) => {
     comment.deleteOne();
     await p.save();
     const updated = await Post.findById(req.params.id)
-      .populate('author', 'username avatar')
-      .populate('comments.author', 'username avatar');
+      .populate('author', 'username avatar avatarImage')
+      .populate('comments.author', 'username avatar avatarImage');
     req.io?.emit('post_commented', updated);
     res.json(updated);
   } catch(e) { res.status(500).json({ error: e.message }); }

@@ -37,6 +37,12 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
     credentials: true
   },
+  // ✅ Fix Render : accepter polling ET websocket
+  // Le plan gratuit Render peut bloquer les WS purs — polling en fallback
+  transports: ['polling', 'websocket'],
+  allowUpgrades: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
   maxHttpBufferSize: 10e6
 });
 
@@ -96,7 +102,7 @@ io.on('connection', socket => {
         readBy: [uid]
       });
       await Chat.findByIdAndUpdate(chatId, { lastMessage: msg._id, updatedAt: new Date() });
-      const full = await msg.populate('sender', 'username avatar');
+      const full = await msg.populate('sender', 'username avatar avatarImage');
       io.to('c:' + chatId).emit('new_message', full);
 
       const chat = await Chat.findById(chatId);

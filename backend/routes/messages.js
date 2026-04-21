@@ -43,7 +43,7 @@ router.get('/:chatId', auth, async (req, res) => {
     if (!chat) return res.status(403).json({ error: 'Accès refusé' });
     const page = parseInt(req.query.page) || 1;
     const msgs = await Message.find({ chat: req.params.chatId, deleted: false })
-      .populate('sender', 'username avatar')
+      .populate('sender', 'username avatar avatarImage')
       .sort({ createdAt: -1 }).skip((page-1)*50).limit(50);
     res.json(msgs.reverse());
   } catch(e) { res.status(500).json({ error: e.message }); }

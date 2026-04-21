@@ -25,11 +25,11 @@ router.post('/register', async (req, res) => {
       passwordHash,
       secretQuestion,
       secretAnswerHash,
-      avatar: avatar || 'ghost'
+      avatar: avatar || 'face_1'
     });
 
     const token = jwt.sign({ userId: user._id }, SECRET, { expiresIn: '30d' });
-    res.status(201).json({ token, user: { _id: user._id, username: user.username, avatar: user.avatar } });
+    res.status(201).json({ token, user: { _id: user._id, username: user.username, avatar: user.avatar, avatarImage: user.avatarImage || '' } });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -41,7 +41,7 @@ router.post('/login', async (req, res) => {
     if (!user || !await bcrypt.compare(password, user.passwordHash))
       return res.status(401).json({ error: 'Username ou mot de passe incorrect' });
     const token = jwt.sign({ userId: user._id }, SECRET, { expiresIn: '30d' });
-    res.json({ token, user: { _id: user._id, username: user.username, avatar: user.avatar } });
+    res.json({ token, user: { _id: user._id, username: user.username, avatar: user.avatar, avatarImage: user.avatarImage || '' } });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -66,7 +66,7 @@ router.post('/recover', async (req, res) => {
     user.passwordHash = await bcrypt.hash(newPassword, 12);
     await user.save();
     const token = jwt.sign({ userId: user._id }, SECRET, { expiresIn: '30d' });
-    res.json({ token, user: { _id: user._id, username: user.username, avatar: user.avatar } });
+    res.json({ token, user: { _id: user._id, username: user.username, avatar: user.avatar, avatarImage: user.avatarImage || '' } });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

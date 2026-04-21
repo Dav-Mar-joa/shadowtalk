@@ -271,3 +271,48 @@
   input, textarea, select { font-size: 16px; } /* évite zoom iOS */
   .btn-primary { padding: 13px 20px; font-size: 13px; }
 }
+
+/* ── Tabs avatar register ── */
+.reg-avatar-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.reg-av-tab {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--ease);
+}
+.reg-av-tab.active { background: var(--accent-lo); color: var(--accent); border-color: rgba(124,92,252,.3); }
+
+/* ── Grille faces register ── */
+.faces-grid-reg {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.face-pick-reg {
+  aspect-ratio: 1;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all var(--ease);
+  padding: 0;
+}
+.face-pick-reg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.face-pick-reg:hover   { border-color: var(--accent); transform: scale(1.06); }
+.face-pick-reg.selected { border-color: var(--accent); box-shadow: 0 0 12px rgba(124,92,252,.4); transform: scale(1.08); }

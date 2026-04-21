@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { post } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { AVATARS } from '../utils/avatars';
+import { AVATARS, AVATAR_FACES } from '../utils/avatars';
 import './AuthPages.css';
 
 const QUESTIONS = [
@@ -21,7 +21,7 @@ export default function RegisterPage() {
   const navigate  = useNavigate();
 
   const [step,     setStep]     = useState(1); // 1=identité, 2=sécurité, 3=avatar
-  const [form,     setForm]     = useState({ username:'', password:'', secretQuestion: QUESTIONS[0], secretAnswer:'', avatar:'ghost' });
+  const [form,     setForm]     = useState({ username:'', password:'', secretQuestion: QUESTIONS[0], secretAnswer:'', avatar:'face_1' });
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
 
@@ -125,24 +125,49 @@ export default function RegisterPage() {
           {step === 3 && (
             <div className="auth-fields fade-in">
               <label className="field-label-top">CHOIX DE L'AVATAR</label>
-              <div className="avatar-grid">
-                {AVATARS.map(a => (
-                  <button
-                    type="button"
-                    key={a.id}
-                    className={`avatar-pick ${form.avatar === a.id ? 'selected' : ''}`}
-                    onClick={() => set('avatar', a.id)}
-                    title={a.label}
-                  >
-                    <span>{a.emoji}</span>
-                  </button>
-                ))}
+              {/* Onglets faces / emojis */}
+              <div className="reg-avatar-tabs">
+                <button type="button"
+                  className={`reg-av-tab ${!form._emojiMode ? 'active' : ''}`}
+                  onClick={() => set('_emojiMode', false)}>🎭 Avatars</button>
+                <button type="button"
+                  className={`reg-av-tab ${form._emojiMode ? 'active' : ''}`}
+                  onClick={() => set('_emojiMode', true)}>😊 Emojis</button>
               </div>
+              {!form._emojiMode ? (
+                <div className="faces-grid-reg">
+                  {AVATAR_FACES.map(f => (
+                    <button type="button" key={f.id}
+                      className={`face-pick-reg ${form.avatar === f.id ? 'selected' : ''}`}
+                      onClick={() => set('avatar', f.id)} title={f.label}>
+                      <img src={f.src} alt={f.label}/>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="avatar-grid">
+                  {AVATARS.map(a => (
+                    <button type="button" key={a.id}
+                      className={`avatar-pick ${form.avatar === a.id ? 'selected' : ''}`}
+                      onClick={() => set('avatar', a.id)} title={a.label}>
+                      <span>{a.emoji}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="selected-avatar">
-                <div className="avatar avatar-lg">{AVATARS.find(a=>a.id===form.avatar)?.emoji}</div>
+                {form.avatar?.startsWith('face_')
+                  ? <img src={AVATAR_FACES.find(f=>f.id===form.avatar)?.src} alt="avatar"
+                      style={{width:52,height:52,borderRadius:'50%',objectFit:'cover',border:'2px solid var(--accent)'}}/>
+                  : <div className="avatar avatar-lg">{AVATARS.find(a=>a.id===form.avatar)?.emoji || '👻'}</div>
+                }
                 <div>
                   <div style={{fontFamily:'var(--font-ui)',fontWeight:700,color:'var(--text-1)'}}>@{form.username}</div>
-                  <div style={{color:'var(--text-3)',fontSize:11}}>{AVATARS.find(a=>a.id===form.avatar)?.label}</div>
+                  <div style={{color:'var(--text-3)',fontSize:11}}>
+                    {form.avatar?.startsWith('face_')
+                      ? AVATAR_FACES.find(f=>f.id===form.avatar)?.label
+                      : AVATARS.find(a=>a.id===form.avatar)?.label}
+                  </div>
                 </div>
               </div>
             </div>

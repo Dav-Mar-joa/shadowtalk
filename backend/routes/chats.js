@@ -9,7 +9,7 @@ router.use((req, res, next) => { req.io = req.app.get('io'); next(); });
 router.get('/', auth, async (req, res) => {
   try {
     const chats = await Chat.find({ members: req.userId })
-      .populate('members', 'username avatar')
+      .populate('members', 'username avatar avatarImage')
       .populate({ path: 'lastMessage', populate: { path: 'sender', select: 'username' } })
       .sort({ updatedAt: -1 });
     res.json(chats);
@@ -22,10 +22,10 @@ router.post('/direct', auth, async (req, res) => {
     const { targetUserId } = req.body;
     const members = [req.userId, targetUserId].sort();
     let chat = await Chat.findOne({ isGroup: false, members: { $all: members, $size: 2 } })
-      .populate('members', 'username avatar');
+      .populate('members', 'username avatar avatarImage');
     if (!chat) {
       chat = await (await Chat.create({ isGroup: false, members, createdBy: req.userId }))
-        .populate('members', 'username avatar');
+        .populate('members', 'username avatar avatarImage');
       // Notifie le destinataire qu'un nouveau chat existe
       const targetSocketId = req.app.get('online')?.get(targetUserId);
       if (targetSocketId) req.io?.to(targetSocketId).emit('new_chat', chat);
@@ -41,7 +41,7 @@ router.post('/group', auth, async (req, res) => {
     if (!name || !memberIds?.length) return res.status(400).json({ error: 'Nom et membres requis' });
     const members = [...new Set([req.userId, ...memberIds])];
     const chat = await (await Chat.create({ isGroup: true, name, members, createdBy: req.userId }))
-      .populate('members', 'username avatar');
+      .populate('members', 'username avatar avatarImage');
     // Notifie tous les membres
     members.forEach(uid => {
       const sid = req.app.get('online')?.get(uid.toString());
@@ -66,7 +66,7 @@ router.delete('/:id', auth, async (req, res) => {
         req.io?.emit('chat_deleted', { chatId: req.params.id });
       } else {
         await chat.save();
-        req.io?.to('c:' + req.params.id).emit('chat_updated', await chat.populate('members', 'username avatar'));
+        req.io?.to('c:' + req.params.id).emit('chat_updated', await chat.populate('members', 'username avatar avatarImage'));
       }
     } else {
       // Supprimer le chat 1-1 + ses messages

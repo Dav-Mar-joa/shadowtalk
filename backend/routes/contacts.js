@@ -9,7 +9,7 @@ router.use((req, res, next) => { req.io = req.app.get('io'); next(); });
 router.get('/', auth, async (req, res) => {
   try {
     const contacts = await Contact.find({ owner: req.userId })
-      .populate('contact', 'username avatar')
+      .populate('contact', 'username avatar avatarImage')
       .sort({ addedAt: -1 });
     res.json(contacts.map(c => c.contact));
   } catch(e) { res.status(500).json({ error: e.message }); }
