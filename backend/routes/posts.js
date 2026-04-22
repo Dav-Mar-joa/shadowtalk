@@ -1,7 +1,6 @@
 const router = require('express').Router();
 const auth   = require('../middleware/auth');
 const Post   = require('../models/Post');
-const Contact = require('../models/Contact');
 
 router.use((req, res, next) => { req.io = req.app.get('io'); next(); });
 
@@ -43,53 +42,16 @@ function applyReaction(reactionsMap, userId, newEmoji) {
   return reactionsMap;
 }
 
-// // Fil d'actu
-// router.get('/', auth, async (req, res) => {
-//   try {
-//     const page  = parseInt(req.query.page) || 1;
-//     const posts = await Post.find()
-//       .populate('author', 'username avatar avatarImage')
-//       .populate('comments.author', 'username avatar avatarImage')
-//       .sort({ createdAt: -1 }).skip((page-1)*20).limit(20);
-//     res.json(posts);
-//   } catch(e) { res.status(500).json({ error: e.message }); }
-// });
+// Fil d'actu
 router.get('/', auth, async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const userId = req.userId;
-
-    // 🔐 récupérer les contacts
-    const contacts = await Contact.find({
-      $or: [
-        { user: userId },
-        { contact: userId }
-      ]
-    });
-
-    // 🎯 extraire les IDs des contacts
-    const contactIds = contacts.map(c =>
-      c.user.toString() === userId ? c.contact : c.user
-    );
-
-    // ➕ inclure soi-même
-    contactIds.push(userId);
-
-    // 🔥 récupérer uniquement les posts autorisés
-    const posts = await Post.find({
-      author: { $in: contactIds }
-    })
+    const page  = parseInt(req.query.page) || 1;
+    const posts = await Post.find()
       .populate('author', 'username avatar avatarImage')
       .populate('comments.author', 'username avatar avatarImage')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * 20)
-      .limit(20);
-
+      .sort({ createdAt: -1 }).skip((page-1)*20).limit(20);
     res.json(posts);
-
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 // Créer un post

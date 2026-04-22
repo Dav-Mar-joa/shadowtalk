@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { AVATARS, AVATAR_FACES, getAvatarEmoji, isFaceAvatar, getFaceAvatar } from '../utils/avatars';
 import UserAvatar from '../components/layout/UserAvatar';
 import './ProfilePage.css';
@@ -19,6 +20,7 @@ function apiDirect(path, opts = {}) {
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuth();
+  const { setUserInCache } = useSocket();
   const navigate = useNavigate();
   const fileRef  = useRef(null);
 
@@ -91,6 +93,9 @@ export default function ProfilePage() {
       if (updated.error) { setError(updated.error); return; }
 
       updateUser(updated);
+      // ✅ Mettre à jour le cache socket immédiatement
+      // (le broadcast socket arrivera aussi mais avec un léger délai)
+      setUserInCache(updated);
       setSuccess('Profil mis à jour ✓');
       setTimeout(() => setSuccess(''), 3000);
     } catch(e) {

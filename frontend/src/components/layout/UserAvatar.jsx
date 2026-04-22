@@ -21,8 +21,7 @@ export default function UserAvatar({ user, size = 'md' }) {
 
   // Résoudre depuis le cache (mise à jour temps réel)
   const id      = (user._id || user)?.toString();
-  // const cached  = id ? usersCache[id] : null;
-  const cached = usersCache?.[id];
+  const cached  = id ? usersCache[id] : null;
   const current = cached ? { ...user, ...cached } : user;
 
   const avatarId  = current.avatar || 'ghost';
