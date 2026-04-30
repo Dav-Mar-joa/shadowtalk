@@ -64,7 +64,18 @@ export default function ChatRoom() {
     if (!socket) return;
     socket.emit('join_chat', id);
     apiDirect(`/messages/${id}/read`, { method: 'POST' }).catch(() => {});
-    return () => socket.emit('leave_chat', id);
+
+    // ✅ Re-join après reconnexion (Render redémarre parfois le serveur)
+    const onReconnect = () => {
+      socket.emit('join_chat', id);
+      apiDirect(`/messages/${id}/read`, { method: 'POST' }).catch(() => {});
+    };
+    socket.on('client_reconnected', onReconnect);
+
+    return () => {
+      socket.emit('leave_chat', id);
+      socket.off('client_reconnected', onReconnect);
+    };
   }, [socket, id]);
 
   useEffect(() => {

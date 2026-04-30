@@ -130,6 +130,13 @@ io.on('connection', socket => {
   socket.on('typing', ({ chatId, typing }) =>
     socket.to('c:' + chatId).emit('typing', { userId: uid, typing }));
 
+  // ✅ Client reconnecté — il va re-join ses rooms lui-même
+  // On notifie juste les autres qu'il est de nouveau en ligne
+  socket.on('client_reconnected', () => {
+    online.set(uid, socket.id);
+    io.emit('user_online', uid);
+  });
+
   socket.on('disconnect', () => {
     online.delete(uid);
     io.emit('user_offline', uid);
