@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const auth   = require('../middleware/auth');
-const Post   = require('../models/Post');
+const Post    = require('../models/Post');
+const Contact = require('../models/Contact');
 
 router.use((req, res, next) => { req.io = req.app.get('io'); next(); });
 
@@ -45,11 +46,19 @@ function applyReaction(reactionsMap, userId, newEmoji) {
 // Fil d'actu
 router.get('/', auth, async (req, res) => {
   try {
-    const page  = parseInt(req.query.page) || 1;
-    const posts = await Post.find()
+    const page = parseInt(req.query.page) || 1;
+
+    // ✅ Récupérer uniquement les posts de mes contacts + les miens
+    const myContacts = await Contact.find({ owner: req.userId }).select('contact');
+    const contactIds = myContacts.map(c => c.contact);
+    // Inclure mon propre userId pour voir mes propres posts
+    const authorIds  = [...contactIds, req.userId];
+
+    const posts = await Post.find({ author: { $in: authorIds } })
       .populate('author', 'username avatar avatarImage')
       .populate('comments.author', 'username avatar avatarImage')
       .sort({ createdAt: -1 }).skip((page-1)*20).limit(20);
+
     res.json(posts);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });

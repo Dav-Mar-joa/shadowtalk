@@ -3,6 +3,7 @@ import { get, post, timeAgo, detectUrlType, getYoutubeId, apiDirect } from '../u
 import { getAvatarEmoji } from '../utils/avatars';
 import { useAuth }   from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import UserAvatar from '../components/layout/UserAvatar';
 import './FeedPage.css';
 import { getAvatarDisplay } from '../utils/avatars';
 
@@ -66,7 +67,7 @@ function ReactionBar({ reactions = {}, userId, onReact, small = false }) {
 
 export default function FeedPage() {
   const { user }   = useAuth();
-  const { socket } = useSocket();
+  const { socket, resolveUser } = useSocket();
   const [posts,      setPosts]      = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [postForm,   setPostForm]   = useState({ content:'', url:'' });
@@ -168,7 +169,7 @@ export default function FeedPage() {
         {/* Composer */}
         <div className="post-composer fade-up">
           <div className="composer-header">
-            <div className="avatar">{getAvatarEmoji(user?.avatar)}</div>
+            <UserAvatar user={user} size="md"/>
             <span className="composer-who">@{user?.username}</span>
             <span className="tag tag-accent">POST</span>
           </div>
@@ -223,9 +224,9 @@ export default function FeedPage() {
             <div key={p._id} className="post-card fade-up" style={{animationDelay:`${idx*0.04}s`}}>
               {/* Header */}
               <div className="post-header">
-                <div className="avatar">{getAvatarEmoji(p.author?.avatar)}</div>
+                <UserAvatar user={resolveUser(p.author)} size="md"/>
                 <div className="post-meta">
-                  <span className="post-author">@{p.author?.username}</span>
+                  <span className="post-author">@{resolveUser(p.author)?.username}</span>
                   <span className="post-time">{timeAgo(p.createdAt)}</span>
                 </div>
                 {p.urlType==='event' && <span className="tag tag-cyan">📅 SOIRÉE</span>}
@@ -266,9 +267,9 @@ export default function FeedPage() {
                     const cReactions = c.reactions instanceof Map ? Object.fromEntries(c.reactions) : (c.reactions || {});
                     return (
                       <div key={c._id} className="comment-row">
-                        <div className="avatar avatar-sm">{getAvatarEmoji(c.author?.avatar)}</div>
+                        <UserAvatar user={resolveUser(c.author)} size="sm"/>
                         <div className="comment-body">
-                          <span className="comment-author">@{c.author?.username}</span>
+                          <span className="comment-author">@{resolveUser(c.author)?.username}</span>
                           <span className="comment-text">{c.content}</span>
                           {/* ✅ Réactions sur commentaire */}
                           <div className="comment-reactions">
@@ -289,7 +290,7 @@ export default function FeedPage() {
                     );
                   })}
                   <div className="comment-input-row">
-                    <div className="avatar avatar-sm">{getAvatarEmoji(user?.avatar)}</div>
+                    <UserAvatar user={user} size="sm"/>
                     <input value={commentText}
                       onChange={e => setCommenting(prev=>({...prev,[p._id]:e.target.value}))}
                       onKeyDown={e => { if(e.key==='Enter'){e.preventDefault();submitComment(p._id);}}}

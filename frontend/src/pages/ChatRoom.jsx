@@ -4,6 +4,7 @@ import { get, post, encrypt, decrypt, formatTime, apiDirect } from '../utils/api
 import { getAvatarEmoji } from '../utils/avatars';
 import { useAuth }         from '../context/AuthContext';
 import { useSocket }       from '../context/SocketContext';
+import UserAvatar          from '../components/layout/UserAvatar';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import OnlineDot           from '../components/layout/OnlineDot';
 import './ChatRoom.css';
@@ -16,7 +17,7 @@ const REACTIONS = ['❤️','😂','👍','😮','😢','🔥'];
 export default function ChatRoom() {
   const { id }       = useParams();
   const { user }     = useAuth();
-  const { socket }   = useSocket();
+  const { socket, resolveUser } = useSocket();
   const { isOnline } = useOnlineStatus();
   const navigate     = useNavigate();
 
@@ -221,7 +222,7 @@ export default function ChatRoom() {
 
   const other      = chat?.members?.find(m => m._id !== user._id);
   const chatName   = chat ? (chat.isGroup ? chat.name : other?.username || '?') : '...';
-  const chatAvatar = chat ? (chat.isGroup ? '👥' : getAvatarEmoji(other?.avatar)) : '💬';
+  const resolvedOther = resolveUser(other);
   const typingUser = typing && chat?.members?.find(m => m._id === typing);
 
   if (loading) return (
@@ -238,7 +239,10 @@ export default function ChatRoom() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <div style={{position:'relative',flexShrink:0}}>
-          <div className="avatar">{chatAvatar}</div>
+          {chat?.isGroup
+            ? <div className="avatar">👥</div>
+            : <UserAvatar user={resolvedOther} size="md"/>
+          }
           {!chat?.isGroup && other && (
             <span style={{position:'absolute',bottom:0,right:0}}>
               <OnlineDot online={isOnline(other._id)} size="sm"/>
@@ -308,11 +312,11 @@ export default function ChatRoom() {
             <div key={msg._id} className={`msg-row ${self ? 'self' : 'other'}`}>
               {!self && (
                 <div className={`avatar avatar-sm ${showAv ? '' : 'invisible'}`}>
-                  {showAv ? getAvatarEmoji(msg.sender?.avatar) : ''}
+                  {showAv ? <UserAvatar user={resolveUser(msg.sender)} size='sm'/> : ''}
                 </div>
               )}
               <div className="msg-block">
-                {showAv && !self && <span className="msg-sender">{msg.sender?.username}</span>}
+                {showAv && !self && <span className="msg-sender">{resolveUser(msg.sender)?.username}</span>}
                 <div className="bubble-wrap">
 
                   {/* Bulle */}
@@ -399,7 +403,7 @@ export default function ChatRoom() {
 
         {typingUser && (
           <div className="msg-row other fade-in">
-            <div className="avatar avatar-sm">{getAvatarEmoji(typingUser.avatar)}</div>
+            <UserAvatar user={resolveUser(typingUser)} size="sm"/>
             <div className="msg-block">
               <div className="bubble bubble-other typing-bubble"><span/><span/><span/></div>
             </div>

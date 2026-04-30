@@ -1,12 +1,11 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth }   from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
-import { getAvatarEmoji } from '../../utils/avatars';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
+import UserAvatar  from './UserAvatar';
 import NotifBanner from './NotifBanner';
 import './Layout.css';
 
-// Bouton notifs compact pour le header mobile
 function MobileNotifBtn() {
   const navigate = useNavigate();
   const { permission, subscribed, loading, subscribe } = usePushNotifications(navigate);
@@ -34,7 +33,7 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="sidebar-logo">
           <span className="logo-icon">◈</span>
-          <span className="logo-text">SHADOW<em>TALK</em></span>
+          <span className="logo-text">S<em>TLK</em></span>
         </div>
         <nav className="sidebar-nav">
           <NavLink to="/chats"    className={({isActive})=>`nav-item ${isActive?'active':''}`}>
@@ -47,11 +46,9 @@ export default function Layout() {
           <NavLink to="/feed"     className={({isActive})=>`nav-item ${isActive?'active':''}`}>
             <span className="nav-icon">📡</span><span className="nav-label">Fil d'actu</span>
           </NavLink>
-          {/* ✅ Profil dans la sidebar desktop */}
           <NavLink to="/profile"  className={({isActive})=>`nav-item ${isActive?'active':''}`}>
-            <span className="nav-icon">
-              {getAvatarEmoji(user?.avatar)}
-            </span>
+            {/* ✅ UserAvatar au lieu de getAvatarEmoji */}
+            <span className="nav-icon"><UserAvatar user={user} size="sm"/></span>
             <span className="nav-label">Mon profil</span>
           </NavLink>
         </nav>
@@ -62,7 +59,8 @@ export default function Layout() {
             <span>{connected ? 'CONNECTÉ' : 'HORS-LIGNE'}</span>
           </div>
           <div className="sidebar-user">
-            <div className="avatar avatar-sm">{getAvatarEmoji(user?.avatar)}</div>
+            {/* ✅ UserAvatar */}
+            <UserAvatar user={user} size="sm"/>
             <span className="user-name">@{user?.username}</span>
             <button className="btn-icon" onClick={handleLogout} title="Déconnexion">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -78,19 +76,14 @@ export default function Layout() {
       {/* ══ STICKY HEADER mobile ══ */}
       <header className="mobile-header">
         <div className="mobile-logo">
-          <span>◈</span>SHADOW<em>TALK</em>
+          <span>◈</span>S<em>TLK</em>
         </div>
         <div className="mobile-header-right">
           <MobileNotifBtn />
           <span className={`mobile-conn-dot ${connected ? 'online' : 'offline'}`}/>
-          {/* ✅ Avatar cliquable → profil */}
-          <div
-            className="avatar avatar-sm"
-            style={{cursor:'pointer'}}
-            onClick={() => navigate('/profile')}
-            title="Mon profil"
-          >
-            {getAvatarEmoji(user?.avatar)}
+          {/* ✅ UserAvatar cliquable → profil */}
+          <div style={{cursor:'pointer'}} onClick={() => navigate('/profile')} title="Mon profil">
+            <UserAvatar user={user} size="sm"/>
           </div>
           <span className="mobile-username" onClick={() => navigate('/profile')} style={{cursor:'pointer'}}>
             @{user?.username}
@@ -120,10 +113,10 @@ export default function Layout() {
           <div className="bnav-icon-wrap"><span>📡</span></div>
           <span>Actu</span>
         </NavLink>
-        {/* ✅ Profil à la place de Quitter */}
+        {/* ✅ UserAvatar dans bottom nav */}
         <NavLink to="/profile" className={({isActive})=>`bnav-item ${isActive?'active':''}`}>
           <div className="bnav-icon-wrap">
-            <span style={{fontSize:22}}>{getAvatarEmoji(user?.avatar)}</span>
+            <UserAvatar user={user} size="sm"/>
           </div>
           <span>Profil</span>
         </NavLink>

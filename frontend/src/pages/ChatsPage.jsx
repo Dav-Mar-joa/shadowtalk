@@ -6,12 +6,13 @@ import { useAuth }        from '../context/AuthContext';
 import { useSocket }      from '../context/SocketContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import OnlineDot          from '../components/layout/OnlineDot';
+import UserAvatar         from '../components/layout/UserAvatar';
 import './ChatsPage.css';
 import { getAvatarDisplay } from '../utils/avatars';
 
 export default function ChatsPage() {
   const { user }   = useAuth();
-  const { socket } = useSocket();
+  const { socket, resolveUser } = useSocket();
   const { isOnline } = useOnlineStatus();
   const navigate   = useNavigate();
 
@@ -90,12 +91,13 @@ export default function ChatsPage() {
 
   function getChatOtherUser(chat) {
     if (chat.isGroup) return null;
-    return chat.members?.find(m=>m._id!==user._id);
+    const u = chat.members?.find(m=>m._id!==user._id);
+    return resolveUser(u);
   }
 
   function getChatAvatar(chat) {
     if (chat.isGroup) return '👥';
-    return getAvatarEmoji(getChatOtherUser(chat)?.avatar);
+    return null;
   }
 
   function getLastMsg(chat) {
@@ -140,7 +142,7 @@ export default function ChatsPage() {
             <div className="group-picked">
               {groupPicked.map(u=>(
                 <span key={u._id} className="picked-chip" onClick={()=>toggleGroupPick(u)}>
-                  {getAvatarEmoji(u.avatar)} {u.username} ✕
+                  {u.username} ✕
                 </span>
               ))}
             </div>
@@ -158,7 +160,7 @@ export default function ChatsPage() {
           {searchRes.map(u => (
             <div key={u._id} className="search-user-row" onClick={()=>groupMode?toggleGroupPick(u):openDirect(u)}>
               <div style={{position:'relative',flexShrink:0}}>
-                <div className="avatar">{getAvatarEmoji(u.avatar)}</div>
+                <UserAvatar user={u} size="md"/>
                 <OnlineDot online={isOnline(u._id)} size="sm" style={{position:'absolute',bottom:0,right:0}}/>
               </div>
               <span className="su-name">{u.username}</span>
@@ -189,7 +191,10 @@ export default function ChatsPage() {
           return (
             <div key={chat._id} className="chat-row" onClick={()=>navigate(`/chat/${chat._id}`)}>
               <div style={{position:'relative',flexShrink:0}}>
-                <div className="avatar avatar-lg">{getChatAvatar(chat)}</div>
+                {chat.isGroup
+                  ? <div className="avatar avatar-lg">👥</div>
+                  : <UserAvatar user={other} size="lg"/>
+                }
                 {!chat.isGroup && (
                   <span style={{position:'absolute',bottom:1,right:1}}>
                     <OnlineDot online={online} size="sm"/>

@@ -4,6 +4,7 @@ import { get, post, apiDirect } from '../utils/api';
 import { getAvatarEmoji } from '../utils/avatars';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import OnlineDot from '../components/layout/OnlineDot';
+import UserAvatar from '../components/layout/UserAvatar';
 import './ContactsPage.css';
 import { getAvatarDisplay } from '../utils/avatars';
 
@@ -92,7 +93,7 @@ export default function ContactsPage() {
             return (
               <div key={u._id} className="contact-row">
                 <div className="contact-avatar-wrap">
-                  <div className="avatar">{getAvatarEmoji(u.avatar)}</div>
+                  <UserAvatar user={u} size="md"/>
                   <OnlineDot online={isOnline(u._id)} size="sm" />
                 </div>
                 <div className="contact-info">
@@ -160,7 +161,7 @@ function ContactRow({ contact, online, onChat, onRemove }) {
   return (
     <div className="contact-row" onClick={() => setShowMenu(false)}>
       <div className="contact-avatar-wrap">
-        <div className="avatar">{getAvatarEmoji(contact.avatar)}</div>
+        <UserAvatar user={contact} size="md"/>
         <OnlineDot online={online} size="sm" />
       </div>
       <div className="contact-info">
