@@ -1,9 +1,8 @@
 import CryptoJS from 'crypto-js';
 
-// Dev  : VITE_API_URL=/api  (proxy vite → localhost:5000)
-// Prod : VITE_API_URL non défini → fallback URL Render
-const BASE = import.meta.env.VITE_API_URL
-  || (import.meta.env.DEV ? '/api' : 'https://shadowtalk-kvvv.onrender.com/api');
+// En prod: VITE_API_URL = https://shadowtalk-backend.onrender.com/api
+// En dev:  VITE_API_URL = /api  (proxied par vite vers localhost:5000)
+const BASE    = import.meta.env.VITE_API_URL || '/api';
 const ENC_KEY = import.meta.env.VITE_ENC_KEY || 'ShadowTalk_MyS3cur3K3y_2024!!XYZ';
 
 // ─── HTTP helpers ───────────────────────────────────────────
@@ -42,8 +41,7 @@ export function decrypt(cipher) {
 }
 
 // ─── Awake ping Render ──────────────────────────────────────
-const BACKEND = import.meta.env.VITE_BACKEND_URL
-  || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://shadowtalk-kvvv.onrender.com');
+const BACKEND = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 export function startAwakePing() {
   const ping = () => fetch(BACKEND + '/ping').catch(() => {});
   ping();

@@ -3,24 +3,21 @@ import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
 const SocketCtx = createContext(null);
-
-// Dev  : VITE_BACKEND_URL=http://localhost:5000
-// Prod : VITE_BACKEND_URL non défini → fallback URL Render
-const BACKEND = import.meta.env.VITE_BACKEND_URL
-  || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://shadowtalk-kvvv.onrender.com');
+const BACKEND = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 export function SocketProvider({ children }) {
-  const { token, updateUser } = useAuth();
-  const socketRef    = useRef(null);
-  const updateUserRef = useRef(updateUser);
-  const myUserIdRef  = useRef(null);
+  const { token, user, updateUser } = useAuth();
+  const socketRef = useRef(null);
 
+  // ✅ socket exposé via state pour forcer le re-render quand il change
   const [socket,        setSocket]       = useState(null);
   const [connected,     setConnected]    = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [usersCache,    setUsersCache]   = useState({});
 
-  useEffect(() => { updateUserRef.current = updateUser; }, [updateUser]);
+  // Ref pour accéder au user courant sans recréer le socket
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   useEffect(() => {
     if (!token) {
@@ -31,16 +28,10 @@ export function SocketProvider({ children }) {
       return;
     }
 
-    // Extraire userId du JWT pour user_updated
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      myUserIdRef.current = payload.userId;
-    } catch {}
-
-    console.log('🔌 Connexion socket vers:', BACKEND);
-
     const s = io(BACKEND, {
       auth: { token },
+      // ✅ polling d'abord (fonctionne toujours sur Render),
+      // puis upgrade automatique vers WebSocket
       transports: ['polling', 'websocket'],
       upgrade: true,
       reconnection: true,
@@ -53,29 +44,32 @@ export function SocketProvider({ children }) {
     socketRef.current = s;
 
     s.on('connect', () => {
-      console.log('✅ Socket connecté — transport:', s.io.engine.transport.name);
+      console.log('🔌 Socket connecté, transport:', s.io.engine.transport.name);
       setConnected(true);
+      // ✅ Exposer le socket via state pour que les composants le reçoivent
       setSocket(s);
     });
 
     s.on('disconnect', reason => {
-      console.warn('⚠️ Socket déconnecté:', reason);
+      console.log('🔌 Socket déconnecté:', reason);
       setConnected(false);
     });
 
     s.on('connect_error', err => {
-      console.error('❌ Socket erreur:', err.message, '→ Backend:', BACKEND);
+      console.error('🔌 Erreur connexion:', err.message);
       setConnected(false);
     });
 
-    s.on('reconnect', () => {
-      console.log('🔄 Socket reconnecté');
+    // ✅ Après reconnexion — remettre à jour le state socket
+    s.on('reconnect', attempt => {
+      console.log('🔌 Reconnecté après', attempt, 'tentatives');
       setConnected(true);
       setSocket(s);
+      // Signaler aux pages qu'elles doivent re-joindre leurs rooms
       s.emit('client_reconnected');
     });
 
-    // Notification in-app + browser
+    // Notifications in-app
     s.on('notification', n => {
       setNotifications(prev => [{ ...n, id: Date.now() }, ...prev.slice(0, 49)]);
       if ('vibrate' in navigator) navigator.vibrate([150, 80, 150]);
@@ -85,16 +79,18 @@ export function SocketProvider({ children }) {
             body: 'Nouveau message',
             icon: '/icon-192.png',
             badge: '/badge-72.png',
+            silent: false,
           });
         } catch {}
       }
     });
 
-    // Avatar/username changé
+    // Mise à jour profil d'un user
     s.on('user_updated', updated => {
       setUsersCache(prev => ({ ...prev, [updated._id]: updated }));
-      if (updated._id === myUserIdRef.current) {
-        updateUserRef.current?.(updated);
+      // Mettre à jour AuthContext seulement si c'est moi
+      if (userRef.current?._id && updated._id === userRef.current._id.toString()) {
+        updateUser?.(updated);
       }
     });
 
@@ -113,7 +109,8 @@ export function SocketProvider({ children }) {
     const id = (u._id || u)?.toString();
     if (!id) return u;
     const cached = usersCache[id];
-    return cached ? { ...u, ...cached } : u;
+    if (!cached) return u;
+    return { ...u, ...cached };
   }, [usersCache]);
 
   function setUserInCache(userData) {
@@ -123,7 +120,7 @@ export function SocketProvider({ children }) {
 
   return (
     <SocketCtx.Provider value={{
-      socket,
+      socket,           // ✅ state, pas ref → re-render garanti
       connected,
       notifications,
       clearNotif,
