@@ -1,28 +1,72 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { get, startAwakePing } from '../utils/api';
+import { get, post, startAwakePing } from '../utils/api';
 
 const AuthCtx = createContext(null);
 
-// ✅ Demande les permissions dès que l'user est connecté
-async function requestPermissions() {
-  // 1. Notifications push
-  if ('Notification' in window && Notification.permission === 'default') {
-    await Notification.requestPermission();
-  }
+// ── Subscription push complète ─────────────────────────────
+async function setupPushNotifications() {
+  try {
+    // 1. Vérifier support
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (!('Notification' in window)) return;
 
-  // 2. Microphone — demande silencieuse (juste pour que le navigateur mémorise)
-  if (navigator.mediaDevices?.getUserMedia) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // On coupe immédiatement — on voulait juste la permission
-      stream.getTracks().forEach(t => t.stop());
-    } catch {
-      // Refusé ou pas de micro — pas bloquant
+    // 2. Attendre que le SW soit prêt (il est enregistré dans main.jsx)
+    let reg = window.__swRegistration;
+    if (!reg) {
+      reg = await navigator.serviceWorker.ready;
     }
-  }
+    if (!reg) return;
 
-  // 3. Vibration test (Android)
-  if ('vibrate' in navigator) navigator.vibrate([50]);
+    // 3. Vérifier si déjà subscribed
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) {
+      // Déjà subscribed → juste re-envoyer au backend (en cas de refresh)
+      await post('/push/subscribe', { subscription: existing });
+      return;
+    }
+
+    // 4. Demander permission si pas encore accordée
+    let perm = Notification.permission;
+    if (perm === 'default') {
+      perm = await Notification.requestPermission();
+    }
+    if (perm !== 'granted') return;
+
+    // 5. Récupérer clé VAPID
+    const { key } = await get('/push/vapid-public-key');
+    if (!key) return;
+
+    // 6. Créer la subscription
+    const padding  = '='.repeat((4 - key.length % 4) % 4);
+    const base64   = (key + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData  = window.atob(base64);
+    const appKey   = Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: appKey
+    });
+
+    // 7. Enregistrer au backend
+    await post('/push/subscribe', { subscription });
+    console.log('✅ Push notifications activées');
+
+    // 8. Vibration de confirmation
+    if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
+
+  } catch (err) {
+    // Silencieux — les push sont optionnelles
+    console.warn('Push setup:', err.message);
+  }
+}
+
+// ── Permission micro ───────────────────────────────────────
+async function requestMicPermission() {
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop());
+  } catch { /* refusé — pas bloquant */ }
 }
 
 export function AuthProvider({ children }) {
@@ -36,10 +80,14 @@ export function AuthProvider({ children }) {
         .then(u => {
           setUser(u);
           startAwakePing();
-          // ✅ Demande les permissions dès que l'user est authentifié
-          requestPermissions();
+          // ✅ Setup push + micro automatiquement au démarrage
+          setupPushNotifications();
+          requestMicPermission();
         })
-        .catch(() => { localStorage.removeItem('st_token'); setToken(null); })
+        .catch(() => {
+          localStorage.removeItem('st_token');
+          setToken(null);
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -51,8 +99,9 @@ export function AuthProvider({ children }) {
     setToken(data.token);
     setUser(data.user);
     startAwakePing();
-    // ✅ Aussi demander après le login
-    requestPermissions();
+    // ✅ Setup push après login aussi
+    setupPushNotifications();
+    requestMicPermission();
   }
 
   function logout() {
@@ -61,7 +110,6 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
-  // Mettre à jour les infos user en local (après modif profil)
   function updateUser(updates) {
     setUser(prev => ({ ...prev, ...updates }));
   }
