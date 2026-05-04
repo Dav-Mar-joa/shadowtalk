@@ -20,8 +20,7 @@ function MobileNotifBtn() {
 
 export default function Layout() {
   const { user, logout } = useAuth();
-  const { connected, notifications, contactRequests } = useSocket();
-  const pendingRequests = contactRequests?.length || 0;
+  const { connected, notifications } = useSocket();
   const navigate = useNavigate();
   const unread   = notifications.length;
 
@@ -43,7 +42,6 @@ export default function Layout() {
           </NavLink>
           <NavLink to="/contacts" className={({isActive})=>`nav-item ${isActive?'active':''}`}>
             <span className="nav-icon">👥</span><span className="nav-label">Contacts</span>
-            {pendingRequests > 0 && <span className="nav-badge">{pendingRequests}</span>}
           </NavLink>
           <NavLink to="/feed"     className={({isActive})=>`nav-item ${isActive?'active':''}`}>
             <span className="nav-icon">📡</span><span className="nav-label">Fil d'actu</span>
@@ -108,10 +106,7 @@ export default function Layout() {
           <span>Chats</span>
         </NavLink>
         <NavLink to="/contacts" className={({isActive})=>`bnav-item ${isActive?'active':''}`}>
-          <div className="bnav-icon-wrap">
-            <span>👥</span>
-            {pendingRequests > 0 && <span className="bnav-badge">{pendingRequests}</span>}
-          </div>
+          <div className="bnav-icon-wrap"><span>👥</span></div>
           <span>Contacts</span>
         </NavLink>
         <NavLink to="/feed" className={({isActive})=>`bnav-item ${isActive?'active':''}`}>

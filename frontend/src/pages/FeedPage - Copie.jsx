@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { get, post, timeAgo, detectUrlType, getYoutubeId, apiDirect } from '../utils/api';
 import { getAvatarEmoji } from '../utils/avatars';
 import { useAuth }   from '../context/AuthContext';
@@ -225,7 +224,7 @@ export default function FeedPage() {
             <div key={p._id} className="post-card fade-up" style={{animationDelay:`${idx*0.04}s`}}>
               {/* Header */}
               <div className="post-header">
-                <UserAvatar user={resolveUser(p.author)} size="md" onClick={() => navigate(`/user/${p.author?._id}`)}/>
+                <UserAvatar user={resolveUser(p.author)} size="md"/>
                 <div className="post-meta">
                   <span className="post-author">@{resolveUser(p.author)?.username}</span>
                   <span className="post-time">{timeAgo(p.createdAt)}</span>
@@ -268,7 +267,7 @@ export default function FeedPage() {
                     const cReactions = c.reactions instanceof Map ? Object.fromEntries(c.reactions) : (c.reactions || {});
                     return (
                       <div key={c._id} className="comment-row">
-                        <UserAvatar user={resolveUser(c.author)} size="sm" onClick={() => navigate(`/user/${c.author?._id}`)}/>
+                        <UserAvatar user={resolveUser(c.author)} size="sm"/>
                         <div className="comment-body">
                           <span className="comment-author">@{resolveUser(c.author)?.username}</span>
                           <span className="comment-text">{c.content}</span>

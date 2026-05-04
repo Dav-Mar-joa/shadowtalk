@@ -12,7 +12,7 @@ export default function ContactsPage() {
   const navigate   = useNavigate();
   const { user }   = useAuth();
   const { isOnline } = useOnlineStatus();
-  const { socket, contactRequests, setContactRequests } = useSocket();
+  const { contactRequests, setContactRequests } = useSocket();
 
   const [contacts,  setContacts]  = useState([]);
   const [requests,  setRequests]  = useState([]); // demandes reçues
@@ -33,16 +33,6 @@ export default function ContactsPage() {
     }).catch(e => setError(e.message))
     .finally(() => setLoading(false));
   }, []);
-
-  // ✅ Contact supprimé par l'autre — mise à jour en temps réel
-  useEffect(() => {
-    if (!socket) return;
-    const handler = ({ userId }) => {
-      setContacts(prev => prev.filter(c => c._id !== userId));
-    };
-    socket.on('contact_removed', handler);
-    return () => socket.off('contact_removed', handler);
-  }, [socket]);
 
   // Demandes reçues en temps réel via socket
   useEffect(() => {

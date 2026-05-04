@@ -18,10 +18,3 @@
   height: 100%;
   object-fit: cover;
 }
-
-.uavatar-clickable:hover {
-  border-color: var(--accent);
-  box-shadow: 0 0 8px rgba(124,92,252,.3);
-  transform: scale(1.05);
-  transition: all 0.15s ease;
-}

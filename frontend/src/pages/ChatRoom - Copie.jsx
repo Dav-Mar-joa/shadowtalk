@@ -323,7 +323,7 @@ export default function ChatRoom() {
             <div key={msg._id} className={`msg-row ${self ? 'self' : 'other'}`}>
               {!self && (
                 <div className={`avatar avatar-sm ${showAv ? '' : 'invisible'}`}>
-                  {showAv ? <UserAvatar user={resolveUser(msg.sender)} size='sm' onClick={() => navigate(`/user/${msg.sender?._id || msg.sender}`)}/> : ''}
+                  {showAv ? <UserAvatar user={resolveUser(msg.sender)} size='sm'/> : ''}
                 </div>
               )}
               <div className="msg-block">

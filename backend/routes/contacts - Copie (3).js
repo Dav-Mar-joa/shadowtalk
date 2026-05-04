@@ -50,7 +50,7 @@ router.post('/', auth, async (req, res) => {
     // Créer la demande
     await Contact.create({ owner: req.userId, contact: contactId, status: 'pending' });
 
-    // Notifier la personne demandée via socket + push
+    // Notifier la personne demandée via socket
     const me = await User.findById(req.userId).select('username avatar avatarImage');
     const targetSocketId = req.online?.get(contactId);
     if (targetSocketId) {
@@ -59,22 +59,6 @@ router.post('/', auth, async (req, res) => {
         user: { _id: me._id, username: me.username, avatar: me.avatar, avatarImage: me.avatarImage }
       });
     }
-
-    // ✅ Push notification si l'app est fermée
-    try {
-      const PushSub      = require('../models/PushSubscription');
-      const { sendPush } = require('../utils/webpush');
-      const subs = await PushSub.find({ user: contactId });
-      if (subs.length > 0) {
-        await sendPush(subs.map(s => s.subscription), {
-          title: `👤 ${me.username} veut t'ajouter`,
-          body:  'Nouvel demande de contact',
-          icon:  '/icon-192.png',
-          badge: '/badge-72.png',
-          url:   '/contacts'
-        });
-      }
-    } catch(e) { console.warn('Push contact_request:', e.message); }
 
     res.json({ ok: true, status: 'pending' });
   } catch(e) {

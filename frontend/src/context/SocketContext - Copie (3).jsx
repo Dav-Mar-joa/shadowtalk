@@ -99,11 +99,6 @@ export function SocketProvider({ children }) {
       if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
     });
 
-    // ✅ Contact supprimé par l'autre
-    s.on('contact_removed', ({ userId }) => {
-      // Sera géré par ContactsPage via cet event
-    });
-
     // ✅ Demande acceptée
     s.on('contact_accepted', ({ user }) => {
       setContactRequests(prev => prev.filter(r => r.user._id !== user._id));

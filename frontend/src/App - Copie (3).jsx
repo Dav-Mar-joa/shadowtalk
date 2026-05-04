@@ -8,8 +8,7 @@ import ChatsPage     from './pages/ChatsPage';
 import ChatRoom      from './pages/ChatRoom';
 import FeedPage      from './pages/FeedPage';
 import ContactsPage  from './pages/ContactsPage';
-import ProfilePage     from './pages/ProfilePage';
-import UserProfilePage from './pages/UserProfilePage';
+import ProfilePage   from './pages/ProfilePage';
 import Layout        from './components/layout/Layout';
 
 function Private({ children }) {
@@ -45,7 +44,6 @@ export default function App() {
               <Route path="contacts" element={<ContactsPage/>}/>
               <Route path="feed"     element={<FeedPage/>}/>
               <Route path="profile"  element={<ProfilePage/>}/>
-              <Route path="user/:id"  element={<UserProfilePage/>}/>
             </Route>
           </Routes>
         </BrowserRouter>

@@ -2,8 +2,7 @@ const router = require('express').Router();
 
 router.use((req, res, next) => { req.io = req.app.get('io'); next(); });
 const auth   = require('../middleware/auth');
-const User    = require('../models/User');
-const Contact = require('../models/Contact');
+const User   = require('../models/User');
 
 // Recherche par username
 router.get('/search', auth, async (req, res) => {
@@ -102,34 +101,7 @@ router.get('/:id/profile', auth, async (req, res) => {
     const user = await User.findById(req.params.id)
       .select('username avatar avatarImage bio');
     if (!user) return res.status(404).json({ error: 'Introuvable' });
-
-    // Contacts publics de cet user
-    const contacts = await Contact.find({ owner: req.params.id, status: 'accepted' })
-      .populate('contact', 'username avatar avatarImage')
-      .sort({ addedAt: -1 });
-
-    // Relation entre moi et cet user
-    const relation = await Contact.findOne({
-      $or: [
-        { owner: req.userId, contact: req.params.id },
-        { owner: req.params.id, contact: req.userId }
-      ]
-    });
-
-    const isFriend = relation?.status === 'accepted';
-    const isMe     = req.params.id === req.userId;
-
-    res.json({
-      _id:         user._id,
-      username:    user.username,
-      avatar:      user.avatar,
-      avatarImage: user.avatarImage || '',
-      // ✅ Bio et contacts visibles SEULEMENT si ami ou soi-même
-      bio:         (isFriend || isMe) ? (user.bio || '') : null,
-      contacts:    (isFriend || isMe) ? contacts.map(c => c.contact) : null,
-      relation:    relation ? relation.status : null,
-      isMe
-    });
+    res.json(user);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

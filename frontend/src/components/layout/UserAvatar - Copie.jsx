@@ -10,7 +10,7 @@ import './UserAvatar.css';
  *
  * Se met à jour automatiquement via le cache socket si l'user change son avatar.
  */
-export default function UserAvatar({ user, size = 'md', onClick }) {
+export default function UserAvatar({ user, size = 'md' }) {
   const { usersCache } = useSocket();
 
   if (!user) return (
@@ -30,11 +30,7 @@ export default function UserAvatar({ user, size = 'md', onClick }) {
   const faceData  = isFace ? getFaceAvatar(avatarId) : null;
 
   return (
-    <div
-      className={`uavatar uavatar-${size} ${onClick ? 'uavatar-clickable' : ''}`}
-      onClick={onClick}
-      style={onClick ? {cursor:'pointer'} : {}}
-    >
+    <div className={`uavatar uavatar-${size}`}>
       {isCustom ? (
         // Image uploadée par l'user
         <img
