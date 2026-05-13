@@ -156,11 +156,10 @@
   /* ✅ Input toujours visible en bas — ne se cache pas sous le clavier */
   .chatroom-input-area {
     padding: 8px 10px;
-    /* ✅ safe-area pour les téléphones avec barre de navigation */
     padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
     flex-shrink: 0;
     background: var(--bg-deep);
-    /* ❌ PAS de margin-bottom — ça pousse l'input sous la bottom nav */
+    margin-bottom: 64px;
   }
 
   .input-wrap { padding: 5px 5px 5px 10px; }

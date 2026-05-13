@@ -177,20 +177,11 @@ export default function ChatRoom() {
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // ✅ Détecter le format supporté (iOS Safari ne supporte pas webm)
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : MediaRecorder.isTypeSupported('audio/mp4')
-            ? 'audio/mp4'
-            : '';
-      const mr = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const mr = new MediaRecorder(stream);
       mediaRecRef.current = mr; audioChunks.current = [];
       mr.ondataavailable = e => audioChunks.current.push(e.data);
       mr.onstop = () => {
-        const blobType = mr.mimeType || 'audio/webm';
-        const blob = new Blob(audioChunks.current, { type: blobType });
+        const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
         const reader = new FileReader();
         reader.onload = () => {
           const b64 = reader.result;
@@ -203,8 +194,8 @@ export default function ChatRoom() {
           }]);
           const s = getSocket(); if (s) s.emit('send_message', { chatId: id, type: 'audio', mediaData: encrypt(b64), encryptedContent: '', tempId });
         };
-        stream.getTracks().forEach(t => t.stop()); // libérer le micro
         reader.readAsDataURL(blob);
+        stream.getTracks().forEach(t => t.stop());
       };
       mr.start();
       setRecording(true); setRecSec(0);

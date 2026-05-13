@@ -70,8 +70,8 @@
 ════════════════════════════════ */
 @media (max-width: 768px) {
 
-  /* Layout en colonne — 100dvh s'adapte au clavier */
-  .layout { flex-direction: column; height: 100dvh; }
+  /* Layout en colonne */
+  .layout { flex-direction: column; }
 
   /* Masquer sidebar */
   .sidebar { display: none; }
@@ -122,10 +122,9 @@
   .mobile-notif-icon { font-size: 16px; }
 
   /* ── Main content ── */
-  /* ✅ flex:1 + min-height:0 → s'adapte naturellement au clavier virtuel */
+  /* 50px header + 60px bottom nav */
   .layout-main {
-    flex: 1;
-    min-height: 0;
+    height: calc(100dvh - 50px - 60px);
     overflow: hidden;
   }
 
