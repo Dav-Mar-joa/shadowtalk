@@ -18,8 +18,7 @@ export function SocketProvider({ children }) {
   const [socket,        setSocket]       = useState(null);
   const [connected,     setConnected]    = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [usersCache,      setUsersCache]      = useState({});
-  const [contactRequests, setContactRequests] = useState([]);
+  const [usersCache,    setUsersCache]   = useState({});
 
   useEffect(() => { updateUserRef.current = updateUser; }, [updateUser]);
 
@@ -91,24 +90,6 @@ export function SocketProvider({ children }) {
       }
     });
 
-    // ✅ Demande de contact reçue
-    s.on('contact_request', req => {
-      setContactRequests(prev =>
-        prev.find(r => r.user._id === req.user._id) ? prev : [req, ...prev]
-      );
-      if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
-    });
-
-    // ✅ Contact supprimé par l'autre
-    s.on('contact_removed', ({ userId }) => {
-      // Sera géré par ContactsPage via cet event
-    });
-
-    // ✅ Demande acceptée
-    s.on('contact_accepted', ({ user }) => {
-      setContactRequests(prev => prev.filter(r => r.user._id !== user._id));
-    });
-
     // Avatar/username changé
     s.on('user_updated', updated => {
       setUsersCache(prev => ({ ...prev, [updated._id]: updated }));
@@ -140,22 +121,16 @@ export function SocketProvider({ children }) {
     setUsersCache(prev => ({ ...prev, [userData._id.toString()]: userData }));
   }
 
-  // ✅ Exposer aussi la ref pour les callbacks async (évite closure stale)
-  const getSocket = () => socketRef.current;
-
   return (
     <SocketCtx.Provider value={{
       socket,
-      getSocket,
       connected,
       notifications,
       clearNotif,
       clearAllNotifs,
       usersCache,
       resolveUser,
-      setUserInCache,
-      contactRequests,
-      setContactRequests
+      setUserInCache
     }}>
       {children}
     </SocketCtx.Provider>

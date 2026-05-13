@@ -17,7 +17,7 @@ const REACTIONS = ['❤️','😂','👍','😮','😢','🔥'];
 export default function ChatRoom() {
   const { id }       = useParams();
   const { user }     = useAuth();
-  const { socket, getSocket, resolveUser } = useSocket();
+  const { socket, resolveUser } = useSocket();
   const { isOnline } = useOnlineStatus();
   const navigate     = useNavigate();
 
@@ -149,8 +149,7 @@ export default function ChatRoom() {
       sender: { _id: user._id, username: user.username, avatar: user.avatar },
       encryptedContent: enc, createdAt: new Date().toISOString(), readBy: [user._id]
     }]);
-    const s = getSocket(); if (s) s.emit('send_message', { chatId: id, type: 'text', encryptedContent: enc, tempId });
-    if (s) s.emit('typing', { chatId: id, typing: false });
+    socket.emit('send_message', { chatId: id, type: 'text', encryptedContent: enc, tempId });
     setInput('');
     socket.emit('typing', { chatId: id, typing: false });
   }
@@ -168,7 +167,7 @@ export default function ChatRoom() {
         mediaData: b64, encryptedContent: '',
         createdAt: new Date().toISOString(), readBy: [user._id]
       }]);
-      const s = getSocket(); if (s) s.emit('send_message', { chatId: id, type: 'image', mediaData: encrypt(b64), encryptedContent: '', fileName: file.name, tempId });
+      socket.emit('send_message', { chatId: id, type: 'image', mediaData: encrypt(b64), encryptedContent: '', fileName: file.name, tempId });
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -192,7 +191,7 @@ export default function ChatRoom() {
             mediaData: b64, encryptedContent: '',
             createdAt: new Date().toISOString(), readBy: [user._id]
           }]);
-          const s = getSocket(); if (s) s.emit('send_message', { chatId: id, type: 'audio', mediaData: encrypt(b64), encryptedContent: '', tempId });
+          socket.emit('send_message', { chatId: id, type: 'audio', mediaData: encrypt(b64), encryptedContent: '', tempId });
         };
         reader.readAsDataURL(blob);
         stream.getTracks().forEach(t => t.stop());
@@ -324,7 +323,7 @@ export default function ChatRoom() {
             <div key={msg._id} className={`msg-row ${self ? 'self' : 'other'}`}>
               {!self && (
                 <div className={`avatar avatar-sm ${showAv ? '' : 'invisible'}`}>
-                  {showAv ? <UserAvatar user={resolveUser(msg.sender)} size='sm' onClick={() => navigate(`/user/${msg.sender?._id || msg.sender}`)}/> : ''}
+                  {showAv ? <UserAvatar user={resolveUser(msg.sender)} size='sm'/> : ''}
                 </div>
               )}
               <div className="msg-block">

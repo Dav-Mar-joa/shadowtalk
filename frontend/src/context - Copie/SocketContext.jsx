@@ -140,13 +140,9 @@ export function SocketProvider({ children }) {
     setUsersCache(prev => ({ ...prev, [userData._id.toString()]: userData }));
   }
 
-  // ✅ Exposer aussi la ref pour les callbacks async (évite closure stale)
-  const getSocket = () => socketRef.current;
-
   return (
     <SocketCtx.Provider value={{
       socket,
-      getSocket,
       connected,
       notifications,
       clearNotif,
