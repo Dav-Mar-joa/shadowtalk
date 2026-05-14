@@ -141,6 +141,7 @@
     /* ✅ Utilise dvh pour s'adapter au clavier virtuel */
     display: flex;
     flex-direction: column;
+    padding-bottom : 60px;
   }
 
   .chatroom-header { padding: 8px 12px; gap: 8px; }
